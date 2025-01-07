@@ -1,5 +1,6 @@
 // eta core nodemon.js use kore likhse
 
+// Api Error handling
 class ApiError extends Error {
     constructor(
         statusCode,
@@ -9,6 +10,7 @@ class ApiError extends Error {
     ){
         super(message)
         this.statusCode = statusCode
+        this.data = null
         this.message = message
         this.success = false
         this.errors = errors
