@@ -58,7 +58,7 @@ userSchema.pre("save", async function(next) {           //ei function e exncrypt
 })
 
 userSchema.methods.isPasswordCorrect = async function(password){
-    return await bcrypt.compare(password, this.password)
+    return await bcrypt.compare(password, this.password)         //ekhane user je password input dicche next bar login er belay oitar shathe registration korar shomoy je this.password database e rakha hoise oitar comparison hocche
 }
 
 userSchema.methods.generateAccessToken = function(){
@@ -73,7 +73,6 @@ userSchema.methods.generateAccessToken = function(){
         { 
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
-        // process.env.ACCESS_TOKEN_EXPIRY    //evabe likha jaito na?
     )
 }
 userSchema.methods.generateRefreshToken = function(){
@@ -90,3 +89,14 @@ userSchema.methods.generateRefreshToken = function(){
 }
 
 export const User = mongoose.model("User", userSchema)
+
+
+
+
+
+// structure of jwt.sign 
+// jwt.sign(
+//     payload,            // First parameter: the data you want to encode (object)
+//     secretKey,          // Second parameter: a single string (no curly braces)
+//     options             // Third parameter: an object with multiple options (needs curly braces)
+// );
