@@ -53,7 +53,7 @@ const userSchema = new mongoose.Schema(
 userSchema.pre("save", async function(next) {           //ei function e exncryption kora hocche jeta ektu lengthy process tai etake async likha hoyeche ar parameter hishebe next ana hoyeche karon eta ekta middleware and ekhane next er use asei tai antei hoyeche.
     if(!this.isModified("password")) return next();      //ei line ta likhar karon hocche jemon onno kono field like shudhu avatar change kore save button press kora hole password abar encrypt hobe na. tai ei line likha hoyeche je shudhu password change kora holei password abar encrypt hobe.
 
-    this.password = bcrypt.hash(this.password,10)
+    this.password = await bcrypt.hash(this.password,10)
     next()
 })
 
