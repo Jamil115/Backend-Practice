@@ -61,7 +61,7 @@ userSchema.methods.isPasswordCorrect = async function(password){
     return await bcrypt.compare(password, this.password)         //ekhane user je password input dicche next bar login er belay oitar shathe registration korar shomoy je this.password database e rakha hoise oitar comparison hocche
 }
 
-userSchema.methods.generateAccessToken = function(){
+userSchema.methods.generateAccessToken = function(){     //ei method gula hocche amar nijer banano. Egula banaite evabe methods.(ja naam dite chai) use korte hoy erokom mon moto method banaite hoile.
     return jwt.sign(        //for jwt, summit's video is best
         {
             _id: this._id,      //ekhane shudhu id nilei hoito. Karon id unique so eta diyei define kora jay ke eta. Mon chaise beshi nite tai bakigulao nise.

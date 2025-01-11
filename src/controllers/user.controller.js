@@ -4,6 +4,24 @@ import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+
+// ei access ar refresh token er code ekhanei alada method e na niye normally likha jaito but ei access and refresh token onek lage tai alada ekta method e kora hoise jate pore easily kaje lagano jay. 
+const generateAccessAndRefreshTokens = async(userId) => 
+{
+    try {
+        const user = await User.findById(userId)
+        const accessToken =  user.generateAccessToken()     //generating access token for that user which was fetched by using userId
+        const refreshToken =  user.generateRefreshToken()   //generating refresh token for that user which was fetched by using userId
+
+        user.refreshToken = refreshToken    //In this line the generated tokens has been sent to the client
+        user.save({validateBeforeSave: false})     //jehetu notun refreshToken er value pathano hoyeche tahole oita mongoDB te save o kora lagbe tai oita save kora hocche ei line e. Ar parameter ta use korar karon hocche jate konokisu validate na korei value ta save kore dey karon shudhu ekta field er value e change kortesi so password ba onno kisu jhamela korte pare tai eta dewa.
+        return {accessToken, refreshToken}
+
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating refresh and access token")
+    }
+}
+
 // eta ekta method banailam jeta kono route er kono url generate hoile eta kaj korbe. 
 const registerUser = asyncHandler( async (req, res) => {
 
@@ -79,4 +97,90 @@ const registerUser = asyncHandler( async (req, res) => {
     )
 })
 
-export {registerUser}
+const loginUser = asyncHandler(async (req,res) => {
+    // What tasks I need to do for login:
+    //1. req.body -> data
+    //2. username or email must required
+    //3. find user
+    //4. password check 
+    //5. access and refresh token
+    //6. send cookie
+
+
+    //req.body -> data
+    const {email, username, password} = req.body
+
+    //username or email must required
+    if(!username || !email){
+        throw new ApiError(400, "username or email is required")
+    }
+
+    //find user
+    const user = await User.findOne({
+        $or: [{username}, {email}]
+    })
+
+    if(!user){
+        throw new ApiError(404, "User does not exist")
+    }
+
+    // password check 
+    const isPasswordValid = user.isPasswordCorrect(password)   //mongoose er je userSchema model ta ase oita "User" naame model ta banano hoise (export er line ta dekhlei bujhbo). So eta hocche mongoose er model so etar bhitorer findOne, findById erokom jotogula built in ase use kora jabe but ei "isPasswordCorrect" egula amader nijer banano methods chilo ar ei nijer banano method gula user je object ta ashe tar moddher individual taakei use kore kaaj korte hoy tai ekhane "User" na niye "user" nite hoise
+
+    if(!isPasswordValid){
+        throw new ApiError(401, "Invalid user credentials")
+    }
+
+    //5. access and refresh token => etar shudhu nicher ek line e na. Uporer generateAccessAndRefreshTokens method tao etar part
+    const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+    //6. send cookie
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+    const options = {     //cookies pathar agey amader kisu options set kora lage tar moddhe ei duita hocche jate je kew cookies gula modify na korte pare only server thekei jate egula modify kora jay arki, frontend er manushjon shudhu dekhte parbe but modify korte parbe na.
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user: loggedInUser, accessToken, refreshToken
+            },
+            "User logged in Successfully"
+        )
+    )
+})
+
+const logoutUser = asyncHandler(async (req,res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {
+            new: true
+        }
+    )
+    const options = {     //cookies pathar agey amader kisu options set kora lage tar moddhe ei duita hocche jate je kew cookies gula modify na korte pare only server thekei jate egula modify kora jay arki, frontend er manushjon shudhu dekhte parbe but modify korte parbe na.
+        httpOnly: true,
+        secure: true
+    }
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    ,json(new ApiResponse(200, {}, "User logged Out"))
+})
+
+export {
+    registerUser,
+    loginUser,
+    logoutUser
+}
